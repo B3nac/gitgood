@@ -1,4 +1,4 @@
-from blockfrost import ApiUrls
+from blockfrost import ApiUrls, BlockFrostApi
 from pycardano import (
         PaymentSigningKey, 
         PaymentVerificationKey, 
@@ -21,6 +21,7 @@ commits_db = "/commits.db"
 numbers = string.digits
 random = ''.join(secrets.choice(numbers) for i in range(8))
 
+api = BlockFrostApi(project_id=os.environ['PROJECT_ID'], base_url=ApiUrls.preprod.value)
 # Use testnet
 network = Network.TESTNET
 
@@ -57,7 +58,6 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                 connection.commit()
                 metadata = get_metadata(random, project_name, local_commit_hash, commit_message, timestamp)
                 send_transaction(from_address, payment_signing_key, metadata)
-
             else:
                 onchain_id = connection.execute(f'SELECT onchain_id FROM commits WHERE id=1').fetchone()
                 duplicate = connection.execute(f'SELECT local_commit_hash FROM commits WHERE local_commit_hash="{local_commit_hash}"').fetchall()
@@ -69,6 +69,8 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                     metadata = get_metadata(onchain_id[0], project_name, local_commit_hash, commit_message, timestamp)
                     print("You're good, sending transaction.")
                     send_transaction(from_address, payment_signing_key, metadata)
+                    # Add delay here so the transaction will be on chain before verification
+                    verify_commits_onchain(onchain_id, local_commit_hash)
     except CalledProcessError as e:
         print(e.output)
         connection.close()
@@ -111,8 +113,18 @@ def send_transaction(from_address, payment_signing_key, metadata):
     signed_tx = builder.build_and_sign([payment_signing_key], change_address=from_address)
     submit = context.submit_tx(signed_tx)
     print("Transaction sent!")
-    print(f"Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}")
+    print(f"Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}.")
     print("Please note there will be a slight delay for the transaction to show up on chain.")
+
+def verify_commits_onchain(onchain_id, local_commit_hash):
+    print("Verifying that commits match.")
+    onchain_commits = api.metadata_label_json(onchain_id, return_type="json")
+    for commit in onchain_commits:
+        onchain_commit_hash = commit['json_metadata']['msg'][1]
+        if onchain_commit_hash == local_commit_hash:
+            print("Latest local commit and onchain commit matches, everything is awesome.")
+        else:
+            print("Not the latest commit, commit is not onchain yet, or local repo is out of sync.")
 
 if __name__ == "__main__":
     main()
