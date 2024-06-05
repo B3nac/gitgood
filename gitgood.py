@@ -12,7 +12,7 @@ from pycardano import (
         TransactionOutput
 )
 from subprocess import check_output, CalledProcessError, STDOUT
-import os, string, secrets
+import os, string, secrets, time
 import click, sqlite3
 
 __location__ = os.path.expanduser('~')
@@ -57,7 +57,7 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                 )
                 connection.commit()
                 metadata = get_metadata(random, project_name, local_commit_hash, commit_message, timestamp)
-                send_transaction(from_address, payment_signing_key, metadata)
+                send_transaction(from_address, payment_signing_key, metadata, random, local_commit_hash)
             else:
                 onchain_id = connection.execute(f'SELECT onchain_id FROM commits WHERE id=1').fetchone()
                 duplicate = connection.execute(f'SELECT local_commit_hash FROM commits WHERE local_commit_hash="{local_commit_hash}"').fetchall()
@@ -68,9 +68,7 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                     connection.commit()
                     metadata = get_metadata(onchain_id[0], project_name, local_commit_hash, commit_message, timestamp)
                     print("You're good, sending transaction.")
-                    send_transaction(from_address, payment_signing_key, metadata)
-                    # Add delay here so the transaction will be on chain before verification
-                    verify_commits_onchain(onchain_id, local_commit_hash)
+                    send_transaction(from_address, payment_signing_key, metadata, onchain_id[0], local_commit_hash)
     except CalledProcessError as e:
         print(e.output)
         connection.close()
@@ -100,7 +98,7 @@ def get_metadata(onchain_id, project_name, local_commit_hash, commit_message, ti
     return metadata
 
 
-def send_transaction(from_address, payment_signing_key, metadata):
+def send_transaction(from_address, payment_signing_key, metadata, onchain_id, local_commit_hash):
     context = BlockFrostChainContext(os.environ['PROJECT_ID'], base_url=ApiUrls.preprod.value)
     auxiliary_data = AuxiliaryData(AlonzoMetadata(metadata=Metadata(metadata)))
     utxos = context.utxos(from_address)
@@ -115,6 +113,8 @@ def send_transaction(from_address, payment_signing_key, metadata):
     print("Transaction sent!")
     print(f"Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}.")
     print("Please note there will be a slight delay for the transaction to show up on chain.")
+    time.sleep(80)
+    verify_commits_onchain(onchain_id, local_commit_hash)
 
 def verify_commits_onchain(onchain_id, local_commit_hash):
     print("Verifying that commits match.")
