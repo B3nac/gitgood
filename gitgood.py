@@ -83,18 +83,35 @@ def get_db_connection():
 
 
 def get_metadata(onchain_id, project_name, local_commit_hash, commit_message, timestamp):
-    metadata = {
-                int(f"{onchain_id}"):
-                        {
-                        "msg":
-                    [
-                        f"{project_name}",
-                        f"{local_commit_hash}",
-                        f"{commit_message}",
-                        f"{timestamp}"
-                    ]
-                }
-    }
+    commit_message_length = string_byte_length(commit_message)
+    if commit_message_length <= 64:
+        metadata = {
+                    int(f"{onchain_id}"):
+                            {
+                            "msg":
+                        [
+                            f"{project_name}",
+                            f"{local_commit_hash}",
+                            f"{commit_message}",
+                            f"{timestamp}"
+                        ]
+                    }
+        }
+    if commit_message_length > 64:
+        commit_message_part_one, commit_message_part_two = commit_message[:len(commit_message)//2], commit_message[len(commit_message)//2:]
+        metadata = {
+                    int(f"{onchain_id}"):
+                            {
+                            "msg":
+                        [
+                            f"{project_name}",
+                            f"{local_commit_hash}",
+                            f"{commit_message_part_one}",
+                            f"{commit_message_part_two}",
+                            f"{timestamp}"
+                        ]
+                    }
+        }
     return metadata
 
 
@@ -125,6 +142,9 @@ def verify_commits_onchain(onchain_id, local_commit_hash):
             print("Latest local commit and onchain commit matches, everything is awesome.")
         else:
             print("Not the latest commit, commit is not onchain yet, or local repo is out of sync.")
+
+def string_byte_length(s):
+    return len(s.encode('utf-8'))
 
 if __name__ == "__main__":
     main()
