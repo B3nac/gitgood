@@ -97,7 +97,7 @@ def get_metadata(onchain_id, project_name, local_commit_hash, commit_message, ti
                         ]
                     }
         }
-    if commit_message_length > 64:
+    elif commit_message_length > 64:
         commit_message_part_one, commit_message_part_two = commit_message[:len(commit_message)//2], commit_message[len(commit_message)//2:]
         metadata = {
                     int(f"{onchain_id}"):
@@ -112,6 +112,8 @@ def get_metadata(onchain_id, project_name, local_commit_hash, commit_message, ti
                         ]
                     }
         }
+    elif commit_message_length > 128:
+        print("gitgood only supports commit strings up to 128 bytes, please amend the commit message.")
     return metadata
 
 
