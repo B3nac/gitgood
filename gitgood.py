@@ -129,14 +129,12 @@ def send_transaction(from_address, payment_signing_key, metadata, onchain_id, lo
     builder.add_output(TransactionOutput.from_primitive([to_address, 2000000]))
     signed_tx = builder.build_and_sign([payment_signing_key], change_address=from_address)
     submit = context.submit_tx(signed_tx)
-    print("Transaction sent!")
-    print(f"Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}.")
-    print("Please note there will be a slight delay for the transaction to show up on chain.")
+    print(f" Transaction sent! Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}.")
+    print("Please note there will be a slight delay for the transaction to show up on chain. Waiting a bit before verification.")
     time.sleep(80)
     verify_commits_onchain(onchain_id, local_commit_hash)
 
 def verify_commits_onchain(onchain_id, local_commit_hash):
-    print("Verifying that commits match.")
     onchain_commits = api.metadata_label_json(onchain_id, return_type="json")
     for commit in onchain_commits:
         onchain_commit_hash = commit['json_metadata']['msg'][1]
