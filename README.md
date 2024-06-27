@@ -9,10 +9,12 @@ Git commit history is not immutable and could be taken advantage of in a supply 
 - Stores commit data locally in a sqlite database.
 - Commits the data to the Cardano blockchain for immutable commit history.
 - Verifies that local commit and onchain commit match.
+- Provides a immutable commit history record on chain.
 
 # Soon
 ~~- Compare the local commit to the remote commit stored on Cardano.~~
 - Allow team members to sync and check commits stored on Cardano.
+- Mirror project commits and releases via node like dashboard.
 
 # Example command
 
