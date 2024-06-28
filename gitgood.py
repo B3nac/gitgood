@@ -85,9 +85,9 @@ def main(project_name, git_repo_path, payment_signing_key_path):
             )
             accounts_list = cursor.fetchall()
             if accounts_list == []:
-                with open("commits_schema.sql") as f:
+                with open("tables/commits_schema.sql") as f:
                     connection.executescript(f.read())
-                with open("transactions_schema.sql") as f:
+                with open("tables/transactions_schema.sql") as f:
                     connection.executescript(f.read())
                 cursor.execute(
                     "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, commit_timestamp) VALUES (?, ?, ?, ?, ?)",
