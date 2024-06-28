@@ -85,7 +85,9 @@ def main(project_name, git_repo_path, payment_signing_key_path):
             )
             accounts_list = cursor.fetchall()
             if accounts_list == []:
-                with open("schema.sql") as f:
+                with open("commits_schema.sql") as f:
+                    connection.executescript(f.read())
+                with open("transactions_schema.sql") as f:
                     connection.executescript(f.read())
                 cursor.execute(
                     "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, commit_timestamp) VALUES (?, ?, ?, ?, ?)",
@@ -98,6 +100,7 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                     ),
                 )
                 connection.commit()
+                last_id = cursor.lastrowid
                 metadata = get_metadata(
                     random, project_name, local_commit_hash, commit_message, timestamp
                 )
@@ -107,10 +110,12 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                     metadata,
                     random,
                     local_commit_hash,
+                    last_id
                 )
             else:
+                last_id = cursor.lastrowid
                 onchain_id = connection.execute(
-                    "SELECT onchain_id FROM commits WHERE id=1"
+                    f"SELECT onchain_id FROM commits WHERE id={last_id}"
                 ).fetchone()
                 duplicate = connection.execute(
                     f'SELECT local_commit_hash FROM commits WHERE local_commit_hash="{local_commit_hash}"'
@@ -135,12 +140,14 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                         timestamp,
                     )
                     print("You're good, sending transaction.")
+                    last_id = cursor.lastrowid
                     send_transaction(
                         from_address,
                         payment_signing_key,
                         metadata,
                         onchain_id[0],
                         local_commit_hash,
+                        last_id
                     )
     except CalledProcessError as e:
         print(e.output)
@@ -194,7 +201,7 @@ def get_metadata(
 
 
 def send_transaction(
-    from_address, payment_signing_key, metadata, onchain_id, local_commit_hash
+    from_address, payment_signing_key, metadata, onchain_id, local_commit_hash, last_id
 ):
     context = BlockFrostChainContext(
         os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value
@@ -211,6 +218,16 @@ def send_transaction(
         [payment_signing_key], change_address=from_address
     )
     submit = context.submit_tx(signed_tx)
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+                    "INSERT INTO transactions (transaction_id, transaction_hash) VALUES (?, ?)",
+                    (
+                        f"{last_id}",
+                        f"{submit}",
+                    ),
+                )
+    connection.commit()
     print(
         f" Transaction sent! Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}."
     )
