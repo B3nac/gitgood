@@ -234,6 +234,7 @@ def send_transaction(
     print(
         "Please note there will be a slight delay for the transaction to show up on chain. Waiting a bit before verification."
     )
+    connection.close()
     time.sleep(80)
     verify_commits_onchain(onchain_id, local_commit_hash)
 
