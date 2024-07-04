@@ -117,9 +117,8 @@ def main(project_name, git_repo_path, payment_signing_key_path):
                     last_id
                 )
             else:
-                last_id = cursor.lastrowid
                 onchain_id = connection.execute(
-                    f"SELECT onchain_id FROM commits WHERE id={last_id}"
+                    f"SELECT onchain_id FROM commits WHERE id=1"
                 ).fetchone()
                 duplicate = connection.execute(
                     f'SELECT local_commit_hash FROM commits WHERE local_commit_hash="{local_commit_hash}"'
