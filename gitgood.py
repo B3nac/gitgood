@@ -24,6 +24,7 @@ commits_db = "/commits.db"
 
 numbers = string.digits
 random = "".join(secrets.choice(numbers) for i in range(8))
+api = ""
 
 @click.command()
 @click.option(
@@ -53,12 +54,12 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
         payment_signing_key)
     
     if network_type == "mainnet":
-        api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
+        global api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
         if api.base_url == "https://cardano-mainnet.blockfrost.io/api":
             # Use mainnet
             network = Network.MAINNET
     if network_type == "preprod":
-        api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value)
+        global api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value)
         if api.base_url == "https://cardano-preprod.blockfrost.io/api":
             # Use testnet 
             network = Network.TESTNET
