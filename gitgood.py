@@ -54,12 +54,14 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
         payment_signing_key)
     
     if network_type == "mainnet":
-        global api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
+        global api 
+        api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
         if api.base_url == "https://cardano-mainnet.blockfrost.io/api":
             # Use mainnet
             network = Network.MAINNET
     if network_type == "preprod":
-        global api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value)
+        global api 
+        api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value)
         if api.base_url == "https://cardano-preprod.blockfrost.io/api":
             # Use testnet 
             network = Network.TESTNET
