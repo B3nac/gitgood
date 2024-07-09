@@ -18,4 +18,4 @@ Git commit history is not immutable and could be taken advantage of in a supply 
 
 # Example command
 
-`python3 gitgood.py --project-name awesome-pycardano --git-repo-path ~/awesome-pycardano/ --payment-signing-key-path ../cardano_tests/payment.skey`
+`python3 gitgood.py --project-name awesome-pycardano --git-repo-path ~/awesome-pycardano/ --payment-signing-key-path ../cardano_tests/payment.skey --network-type preprod`
