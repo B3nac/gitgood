@@ -26,6 +26,7 @@ numbers = string.digits
 random = "".join(secrets.choice(numbers) for i in range(8))
 api = ""
 
+
 @click.command()
 @click.option(
     "--project-name",
@@ -52,7 +53,7 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
     payment_signing_key = PaymentSigningKey.load(payment_signing_key_path)
     payment_verification_key = PaymentVerificationKey.from_signing_key(
         payment_signing_key)
-    global api 
+    global api
     if network_type == "mainnet":
         api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
         if api.base_url == "https://cardano-mainnet.blockfrost.io/api":
@@ -96,13 +97,14 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='commits';"
             )
             accounts_list = cursor.fetchall()
-            if accounts_list == []:
+            if not accounts_list:
                 with open("tables/commits_schema.sql") as f:
                     connection.executescript(f.read())
                 with open("tables/transactions_schema.sql") as f:
                     connection.executescript(f.read())
                 cursor.execute(
-                    "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, commit_timestamp) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, "
+                    "commit_timestamp) VALUES (?, ?, ?, ?, ?)",
                     (
                         f"{random}",
                         f"{project_name}",
@@ -133,7 +135,8 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
                 ).fetchall()
                 if not duplicate:
                     cursor.execute(
-                        "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, commit_timestamp) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO commits (onchain_id, project_name, local_commit_hash, commit_message, "
+                        "commit_timestamp) VALUES (?, ?, ?, ?, ?)",
                         (
                             f"{onchain_id[0]}",
                             f"{project_name}",
@@ -191,7 +194,7 @@ def get_metadata(
     elif commit_message_length > 64:
         commit_message_part_one, commit_message_part_two = (
             commit_message[: len(commit_message) // 2],
-            commit_message[len(commit_message) // 2 :],
+            commit_message[len(commit_message) // 2:],
         )
         metadata = {
             int(f"{onchain_id}"): {
@@ -243,7 +246,8 @@ def send_transaction(
         f" Transaction sent! Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}."
     )
     print(
-        "Please note there will be a slight delay for the transaction to show up on chain. Waiting a bit before verification."
+        "Please note there will be a slight delay for the transaction to show up on chain. Waiting a bit before "
+        "verification. "
     )
     connection.close()
     time.sleep(80)
