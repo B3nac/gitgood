@@ -24,7 +24,6 @@ commits_db = "/commits.db"
 
 numbers = string.digits
 random = "".join(secrets.choice(numbers) for i in range(8))
-api = ""
 
 
 @click.command()
@@ -50,10 +49,12 @@ api = ""
     help="The network you want to use, mainnet, preprod, etc.",
 )
 def main(project_name, git_repo_path, payment_signing_key_path, network_type):
+    connection = ""
+    network = ""
     payment_signing_key = PaymentSigningKey.load(payment_signing_key_path)
     payment_verification_key = PaymentVerificationKey.from_signing_key(
         payment_signing_key)
-    global api
+
     if network_type == "mainnet":
         api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.mainnet.value)
         if api.base_url == "https://cardano-mainnet.blockfrost.io/api":
@@ -115,13 +116,13 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
                 )
                 connection.commit()
                 last_id = cursor.lastrowid
-                metadata = get_metadata(
+                create_metadata = get_metadata(
                     random, project_name, local_commit_hash, commit_message, timestamp
                 )
                 send_transaction(
                     from_address,
                     payment_signing_key,
-                    metadata,
+                    create_metadata,
                     random,
                     local_commit_hash,
                     last_id
@@ -146,7 +147,7 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
                         ),
                     )
                     connection.commit()
-                    metadata = get_metadata(
+                    create_metadata = get_metadata(
                         onchain_id[0],
                         project_name,
                         local_commit_hash,
@@ -158,7 +159,7 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
                     send_transaction(
                         from_address,
                         payment_signing_key,
-                        metadata,
+                        create_metadata,
                         onchain_id[0],
                         local_commit_hash,
                         last_id
@@ -171,14 +172,15 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
 
 
 def get_db_connection():
-    connection = sqlite3.connect("commits.db")
+    created_connection = sqlite3.connect("commits.db")
     connection.row_factory = sqlite3.Row
-    return connection
+    return created_connection
 
 
 def get_metadata(
     onchain_id, project_name, local_commit_hash, commit_message, timestamp
 ):
+    metadata = ""
     commit_message_length = string_byte_length(commit_message)
     if commit_message_length <= 64:
         metadata = {
@@ -215,12 +217,12 @@ def get_metadata(
 
 
 def send_transaction(
-    from_address, payment_signing_key, metadata, onchain_id, local_commit_hash, last_id
+    from_address, payment_signing_key, created_metadata, onchain_id, local_commit_hash, last_id
 ):
     context = BlockFrostChainContext(
         os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value
     )
-    auxiliary_data = AuxiliaryData(AlonzoMetadata(metadata=Metadata(metadata)))
+    auxiliary_data = AuxiliaryData(AlonzoMetadata(metadata=Metadata(created_metadata)))
     utxos = context.utxos(from_address)
     builder = TransactionBuilder(context)
     builder.add_input(utxos[0])
@@ -232,8 +234,8 @@ def send_transaction(
         [payment_signing_key], change_address=from_address
     )
     submit = context.submit_tx(signed_tx)
-    connection = get_db_connection()
-    cursor = connection.cursor()
+    get_connection = get_db_connection()
+    cursor = get_connection.cursor()
     cursor.execute(
                     "INSERT INTO transactions (transaction_id, transaction_hash) VALUES (?, ?)",
                     (
