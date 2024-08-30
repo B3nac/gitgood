@@ -173,7 +173,7 @@ def main(project_name, git_repo_path, payment_signing_key_path, network_type):
 
 def get_db_connection():
     created_connection = sqlite3.connect("commits.db")
-    connection.row_factory = sqlite3.Row
+    created_connection.row_factory = sqlite3.Row
     return created_connection
 
 
@@ -243,7 +243,7 @@ def send_transaction(
                         f"{submit}",
                     ),
                 )
-    connection.commit()
+    get_connection.commit()
     print(
         f" Transaction sent! Check the transaction here: https://preprod.cardanoscan.io/transaction/{submit}."
     )
@@ -251,12 +251,14 @@ def send_transaction(
         "Please note there will be a slight delay for the transaction to show up on chain. Waiting a bit before "
         "verification. "
     )
-    connection.close()
+    get_connection.close()
     time.sleep(80)
     verify_commits_onchain(onchain_id, local_commit_hash)
 
 
 def verify_commits_onchain(onchain_id, local_commit_hash):
+    # Change this to somehow dynamically set api type
+    api = BlockFrostApi(project_id=os.environ["PROJECT_ID"], base_url=ApiUrls.preprod.value)
     onchain_commits = api.metadata_label_json(onchain_id, return_type="json")
     for commit in onchain_commits:
         onchain_commit_hash = commit["json_metadata"]["msg"][1]
