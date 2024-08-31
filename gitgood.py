@@ -1,4 +1,4 @@
-from blockfrost import ApiUrls, BlockFrostApi
+from blockfrost import ApiUrls, BlockFrostApi, ApiError
 from pycardano import (
     PaymentSigningKey,
     PaymentVerificationKey,
@@ -258,17 +258,22 @@ def send_transaction(
 
 def verify_commits_onchain(onchain_id, local_commit_hash, network_type):
     api, network = get_network_attributes(network_type)
-    onchain_commits = api.metadata_label_json(onchain_id, return_type="json")
-    for commit in onchain_commits:
-        onchain_commit_hash = commit["json_metadata"]["msg"][1]
-        if onchain_commit_hash == local_commit_hash:
-            print(
-                "Latest local commit and onchain commit matches, everything is awesome."
-            )
-        else:
-            print(
-                "Not the latest commit, commit is not onchain yet, or local repo is out of sync."
-            )
+    try:
+        onchain_commits = api.metadata_label_json(onchain_id, return_type="json")
+        for commit in onchain_commits:
+            onchain_commit_hash = commit["json_metadata"]["msg"][1]
+            if onchain_commit_hash == local_commit_hash:
+                print(
+                    "Latest local commit and onchain commit matches, everything is awesome."
+                )
+            else:
+                print(
+                    "Not the latest commit, commit is not onchain yet, or local repo is out of sync."
+                )
+    except ApiError:
+        print(
+            "Commit is not onchain yet"
+        )
 
 
 def string_byte_length(s):
